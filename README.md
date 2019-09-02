@@ -1,0 +1,2 @@
+# SpaceRush
+A Javascript game
