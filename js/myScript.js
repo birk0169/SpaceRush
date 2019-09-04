@@ -173,16 +173,14 @@ function updateGameArea(){
     myScore.update();
 
 
-    myGamePiece.image.src = "img/quad-fighter-cut-moving.png";
-    myGamePiece.speedX = 0;
-    myGamePiece.speedY = 0; 
+    // myGamePiece.image.src = "img/quad-fighter-cut-moving.png";
+    clearMove(); 
 
     // //Movement mouse control
     // if(myGameArea.x && myGameArea.y){
     //     myGamePiece.x = myGameArea.x;
     //     myGamePiece.y = myGameArea.y;
     // }
-
 
     // move();
 
@@ -205,26 +203,39 @@ function everyInterval(n) {
 
 //Movement
 function move(){
-    
+    if(myGameArea.keys){
+        myGamePiece.image.src = "img/quad-fighter-cut-moving.png";
+    } else{
+        myGamePiece.image.src = "img/quad-fighter-cut.png";
+    }
+}
+
+function changeImage(){
+    myGamePiece.image.src = "img/quad-fighter-cut-moving.png";
 }
 
 function moveUp(){
     myGamePiece.speedY -= 4;
+    changeImage();
 }
 
 function moveDown(){
     myGamePiece.speedY += 4;
+    changeImage();
 }
 
 function moveLeft(){
     myGamePiece.speedX += 4;
+    changeImage();
 }
 
 function moveRight(){
     myGamePiece.speedX -= 4;
+    changeImage();
 }
 
 function clearMove(){
+    myGamePiece.image.src = "img/quad-fighter-cut.png";
     myGamePiece.speedX = 0;
     myGamePiece.speedY = 0;
     
