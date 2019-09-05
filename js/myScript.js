@@ -15,6 +15,9 @@ var myObstacles = [];
 //Score
 var myScore;
 
+//Background
+var myBackground;
+
 //Game Area
 var myGameArea = {
     canvas : document.createElement("canvas"),
@@ -60,7 +63,7 @@ var myGameArea = {
 ////Contructors
 function Component(width, height, color, x, y, type) {
     this.type = type;
-    if (type == "image") {
+    if (type == "image" || type == "background") {
         this.image = new Image();
         this.image.src = color;
     }
@@ -80,16 +83,21 @@ function Component(width, height, color, x, y, type) {
     ctx = myGameArea.context;
 
     //If Text
-    if(this.type == "text"){
+
+    if (type == "image" || type == "background") {
+        ctx.drawImage(this.image, 
+            this.x, 
+            this.y,
+            this.width, this.height);
+        if(type == "background"){
+            ctx.drawImage(this.image, this.x + this.width, this.y, this.width, this.height);
+        }
+        
+    } else if(this.type == "text"){
         ctx.font = this.width + " " + this.height;
         ctx.fillStyle = color;
         ctx.fillText(this.text, this.x, this.y);
-    } else if (type == "image") {
-        ctx.drawImage(this.image, 
-          this.x, 
-          this.y,
-          this.width, this.height);
-      } else{
+    } else{
         ctx.fillStyle = color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
       }
@@ -97,8 +105,18 @@ function Component(width, height, color, x, y, type) {
     //New Position
     this.newPos = function() {
       this.x += this.speedX;
-      this.y += this.speedY; 
+      this.y += this.speedY;
+      if (this.type == "background") {
+        if (this.x == -(this.width)) {
+          this.x = 0;
+        }
+      }
     }
+
+    // this.hitBottom = function(){
+    //     var rockbottom = myGameArea.canvas.height - this.height;
+    // }
+
     //Crash check
     this.crashWith = function(otherObj){
         var myLeft = this.x;
@@ -121,12 +139,14 @@ function Component(width, height, color, x, y, type) {
   }
 
 ////Methods
-//Start game
+//START GAME
 function startGame(){
     
     myGamePiece = new Component(myPieceWidth, myPieceHeight, myPieceImgSrc, myPieceX, myPieceY, "image");
     
     myScore = new Component("30px", "Consolas", "black", 280, 40, "text");
+
+    myBackground = new Component(880, 480, "img/star-sky.png", 0, 0, "background");
 
     myGameArea.start();
     
@@ -136,14 +156,43 @@ function startGame(){
 function updateGameArea(){
     var x, y, height, gap, minHeight, maxHeight, minGap, maxGap;
     //Check for crashes
-    for (i = 0; i < myObstacles.length; i += 1) {
-        if (myGamePiece.crashWith(myObstacles[i])) {
-          myGameArea.stop();
-          return;
-        } 
-    }
+    checkForCrashes();
+
     myGameArea.clear();
     myGameArea.frameNo += 1;
+    
+    spawnObstacles();
+
+    myScore.text = "SCORE: " + myGameArea.frameNo;
+    myScore.update();
+
+    clearMove(); 
+
+    // //Movement mouse control
+    // if(myGameArea.x && myGameArea.y){
+    //     myGamePiece.x = myGameArea.x;
+    //     myGamePiece.y = myGameArea.y;
+    // }
+
+    //Movement Keyboard control
+    keyboardMove();
+    
+    myBackground.speedX = -4; 
+    myBackground.newPos();
+    myBackground.update();
+
+    myGamePiece.newPos();
+    myGamePiece.update();
+    
+    
+}
+
+function everyInterval(n) {
+    if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+    return false;
+  }
+
+function spawnObstacles(){
     //EveryInterval control the frequency of obstacles
     if (myGameArea.frameNo == 1 || everyInterval(100)) {
 
@@ -168,46 +217,23 @@ function updateGameArea(){
         myObstacles[i].x += -2;
         myObstacles[i].update();
     }
+}
 
-    myScore.text = "SCORE: " + myGameArea.frameNo;
-    myScore.update();
+function checkForCrashes(){
+    for (i = 0; i < myObstacles.length; i += 1) {
+        if (myGamePiece.crashWith(myObstacles[i])) {
+          myGameArea.stop();
+          return;
+        } 
+    }
+}
 
-
-    // myGamePiece.image.src = "img/quad-fighter-cut-moving.png";
-    clearMove(); 
-
-    // //Movement mouse control
-    // if(myGameArea.x && myGameArea.y){
-    //     myGamePiece.x = myGameArea.x;
-    //     myGamePiece.y = myGameArea.y;
-    // }
-
-    // move();
-
-    // myGamePiece.image.src = "img/quad-fighter-cut-moving.png";
-    //Movement Keyboard control
+//Movement
+function keyboardMove(){
     if (myGameArea.keys && myGameArea.keys[37]) {moveRight(); }
     if (myGameArea.keys && myGameArea.keys[39]) {moveLeft(); }
     if (myGameArea.keys && myGameArea.keys[38]) {moveUp(); }
     if (myGameArea.keys && myGameArea.keys[40]) {moveDown(); }
-    myGamePiece.newPos();
-    myGamePiece.update();
-    
-    
-}
-
-function everyInterval(n) {
-    if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
-    return false;
-  }
-
-//Movement
-function move(){
-    if(myGameArea.keys){
-        myGamePiece.image.src = "img/quad-fighter-cut-moving.png";
-    } else{
-        myGamePiece.image.src = "img/quad-fighter-cut.png";
-    }
 }
 
 function changeImage(){
