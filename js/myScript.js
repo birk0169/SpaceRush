@@ -19,12 +19,15 @@ var myScore;
 var myBackground;
 
 //Game Area
+var gameAreaWidth = 880;
+var gameAreaHeight = 480;
+
 var myGameArea = {
     canvas : document.createElement("canvas"),
     start : function() {
         //Canvas style
-        this.canvas.width = 880;
-        this.canvas.height = 480;
+        this.canvas.width = gameAreaWidth;
+        this.canvas.height = gameAreaHeight;
         // this.canvas.style.cursor = "none"; //Hide the original cursor
         this.context = this.canvas.getContext("2d");
 
@@ -60,6 +63,30 @@ var myGameArea = {
     }
 }
 
+//Background Area
+var myBackgroundArea = {
+    canvas : document.createElement("canvas"),
+    start : function(){
+        this.canvas.width = gameAreaWidth;
+        this.canvas.height = gameAreaHeight;
+
+        this.context = this.canvas.getContext("2d");
+
+        //Add Canvas
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+
+        //FrameNo : Obstacles
+        this.frameNo = 0;
+
+    },
+    clear : function(){
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+    stop : function(){
+        clearInterval(this.interval);
+    }
+}
+
 ////Contructors
 function Component(width, height, color, x, y, type) {
     this.type = type;
@@ -80,10 +107,11 @@ function Component(width, height, color, x, y, type) {
     this.x = x;
     this.y = y; 
     this.update = function() {
-    ctx = myGameArea.context;
+        if(type == "background"){ctx = myBackgroundArea.context;} 
+        else{ctx = myGameArea.context;}
+    
 
     //If Text
-
     if (type == "image" || type == "background") {
         ctx.drawImage(this.image, 
             this.x, 
@@ -110,12 +138,41 @@ function Component(width, height, color, x, y, type) {
         if (this.x == -(this.width)) {
           this.x = 0;
         }
+      } else{
+          this.hitBottom();
+          this.hitTop();
+          this.hitLeft();
       }
+
     }
 
-    // this.hitBottom = function(){
-    //     var rockbottom = myGameArea.canvas.height - this.height;
-    // }
+    this.hitTop = function(){
+        let top = 0;
+        if(this.y < 0){
+            this.y = top;
+        }
+    }
+
+    this.hitBottom = function(){
+        let rockbottom = myGameArea.canvas.height - this.height;
+        if(this.y > rockbottom){
+            this.y = rockbottom;
+        }
+    }
+
+    this.hitLeft = function(){
+        let maxLeft = 0;
+        if(this.x < maxLeft){
+            this.x = maxLeft;
+        }
+    }
+
+    this.hitRight = function(){
+        let maxRight = myGameArea.width - this.width;
+        if(this.x > maxRight){
+            this.x = maxRight;
+        }
+    }
 
     //Crash check
     this.crashWith = function(otherObj){
@@ -144,17 +201,18 @@ function startGame(){
     
     myGamePiece = new Component(myPieceWidth, myPieceHeight, myPieceImgSrc, myPieceX, myPieceY, "image");
     
-    myScore = new Component("30px", "Consolas", "black", 280, 40, "text");
+    myScore = new Component("30px", "Consolas", "white", 280, 40, "text");
 
     myBackground = new Component(880, 480, "img/star-sky.png", 0, 0, "background");
 
     myGameArea.start();
+    myBackgroundArea.start();
     
 }
 
 //Update
 function updateGameArea(){
-    var x, y, height, gap, minHeight, maxHeight, minGap, maxGap;
+    
     //Check for crashes
     checkForCrashes();
 
@@ -177,7 +235,7 @@ function updateGameArea(){
     //Movement Keyboard control
     keyboardMove();
     
-    myBackground.speedX = -4; 
+    myBackground.speedX =- 4; 
     myBackground.newPos();
     myBackground.update();
 
@@ -193,6 +251,8 @@ function everyInterval(n) {
   }
 
 function spawnObstacles(){
+    var x, y, height, gap, minHeight, maxHeight, minGap, maxGap;
+
     //EveryInterval control the frequency of obstacles
     if (myGameArea.frameNo == 1 || everyInterval(100)) {
 
@@ -241,22 +301,22 @@ function changeImage(){
 }
 
 function moveUp(){
-    myGamePiece.speedY -= 4;
+    myGamePiece.speedY = -4;
     changeImage();
 }
 
 function moveDown(){
-    myGamePiece.speedY += 4;
+    myGamePiece.speedY = 4;
     changeImage();
 }
 
 function moveLeft(){
-    myGamePiece.speedX += 4;
+    myGamePiece.speedX = 4;
     changeImage();
 }
 
 function moveRight(){
-    myGamePiece.speedX -= 4;
+    myGamePiece.speedX = -4;
     changeImage();
 }
 
@@ -264,8 +324,16 @@ function clearMove(){
     myGamePiece.image.src = "img/quad-fighter-cut.png";
     myGamePiece.speedX = 0;
     myGamePiece.speedY = 0;
-    
+
+    //Slow down
+    // if(myGamePiece.speed > 0){
+    // 	myGamePiece.speed -= 0.1;
+    // } else if (myGamePiece.speed < 0){
+    // 	myGamePiece.speed += 0.1;
+    // }
 }
+
+
 
 //Start game
 startGame();
