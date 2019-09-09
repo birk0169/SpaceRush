@@ -9,6 +9,11 @@ var myPieceImgSrc = "img/quad-fighter-cut.png";
 var myPieceX = 10;
 var myPieceY = 210;
 
+//Projectiles
+var myBullets = [];
+var firerate = 20;
+var nextBullet = 0;
+
 //Obstacles
 var myObstacles = [];
 
@@ -203,7 +208,7 @@ function startGame(){
     
     myScore = new Component("30px", "Consolas", "white", 280, 40, "text");
 
-    myBackground = new Component(880, 480, "img/star-sky.png", 0, 0, "background");
+    myBackground = new Component(880, 480, "img/starry-sky.png", 0, 0, "background");
 
     myGameArea.start();
     myBackgroundArea.start();
@@ -214,7 +219,11 @@ function startGame(){
 function updateGameArea(){
     
     //Check for crashes
-    checkForCrashes();
+    if(checkForCrashes(myObstacles, myGamePiece)[0]){
+        myGameArea.stop();
+          return;
+    }
+    
 
     myGameArea.clear();
     myGameArea.frameNo += 1;
@@ -232,15 +241,24 @@ function updateGameArea(){
     //     myGamePiece.y = myGameArea.y;
     // }
 
+    //Firing Logic
+    shootBullet();
+
     //Movement Keyboard control
     keyboardMove();
     
+    //Background
     myBackground.speedX =- 4; 
     myBackground.newPos();
     myBackground.update();
 
+    //Game Piece
+    
     myGamePiece.newPos();
     myGamePiece.update();
+
+    
+
     
     
 }
@@ -252,10 +270,10 @@ function everyInterval(n) {
 
 function spawnObstacles(){
     var x, y, height, gap, minHeight, maxHeight, minGap, maxGap;
-
+    
     //EveryInterval control the frequency of obstacles
     if (myGameArea.frameNo == 1 || everyInterval(100)) {
-
+        
         //Obstacles
         x = myGameArea.canvas.width;
 
@@ -277,14 +295,50 @@ function spawnObstacles(){
         myObstacles[i].x += -2;
         myObstacles[i].update();
     }
+    for (i = 0; i < myObstacles.length; i += 1) {
+        if(myObstacles[i].x < 0){
+            myObstacles.splice(i, 1);
+        } else if(true){
+
+        }
+    }
 }
 
-function checkForCrashes(){
-    for (i = 0; i < myObstacles.length; i += 1) {
-        if (myGamePiece.crashWith(myObstacles[i])) {
-          myGameArea.stop();
-          return;
-        } 
+//Check for crashes
+function checkForCrashes(arrayOne, obj){
+    for(j = 0; j < arrayOne.length; j += 1){
+        if(obj.crashWith(arrayOne[j])){
+            return [true, j];
+        }
+    }
+    return [false];
+}
+
+//Firing Logic
+function shootBullet(){
+    if(nextBullet != 0){
+        nextBullet -= 1;
+    }
+
+    if((myGameArea.keys && myGameArea.keys[32]) && nextBullet == 0){
+        //Spawn Bullet
+        myBullets.push(new Component(10, 5, "white", myGamePiece.x + myGamePiece.width, (myGamePiece.y + (myGamePiece.height / 2))));
+        
+        nextBullet = firerate;
+    }
+
+    for(i = 0; i < myBullets.length; i += 1){
+        myBullets[i].x += 6;
+        myBullets[i].update();
+
+        // checkBullet(myBullets[i]);
+        let crashCheck = checkForCrashes(myObstacles, myBullets[i]);
+        if(crashCheck[0]){
+            myBullets.splice(i, 1);
+            myObstacles.splice(crashCheck[1], 1);
+        } else if(myBullets[i].x > gameAreaWidth){
+            myBullets.splice(i, 1);
+        }
     }
 }
 
