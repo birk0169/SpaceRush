@@ -9,6 +9,8 @@ var myPieceImgSrc = "img/quad-fighter-cut.png";
 var myPieceX = 10;
 var myPieceY = 210;
 
+var moving = true;
+
 //Projectiles
 var myBullets = [];
 var firerate = 20;
@@ -104,9 +106,14 @@ function Component(width, height, color, x, y, type) {
     this.width = width;
     this.height = height;
 
+    //Hit Box: to be added
+
     //Speed
     this.speedX = 0;
     this.speedY = 0;
+
+    //health
+    this.health = 0;
 
     //Position
     this.x = x;
@@ -139,6 +146,7 @@ function Component(width, height, color, x, y, type) {
     this.newPos = function() {
       this.x += this.speedX;
       this.y += this.speedY;
+      
       if (this.type == "background") {
         if (this.x == -(this.width)) {
           this.x = 0;
@@ -220,6 +228,9 @@ function updateGameArea(){
     
     //Check for crashes
     if(checkForCrashes(myObstacles, myGamePiece)[0]){
+        //Play game over sound
+        playSound("sine", 300, 1.2, 150, 0.5,1,0.9);
+
         myGameArea.stop();
           return;
     }
@@ -276,35 +287,81 @@ function spawnObstacles(){
         
         //Obstacles
         x = myGameArea.canvas.width;
+        y = myGameArea.canvas.height;
 
-        //Size
-        minHeight = 20;
-        maxHeight = 200;
-        height = Math.floor(Math.random()*(maxHeight-minHeight+1)+minHeight);
+        // //Size
+        // minHeight = 20;
+        // maxHeight = 200;
+        // height = Math.floor(Math.random()*(maxHeight-minHeight+1)+minHeight);
 
-        //Gap
-        minGap = 100;
-        maxGap = 300;
-        gap = Math.floor(Math.random()*(maxGap-minGap+1)+minGap);
+        // //Gap
+        // minGap = 100;
+        // maxGap = 300;
+        // gap = Math.floor(Math.random()*(maxGap-minGap+1)+minGap);
 
-        // y = myGameArea.canvas.height - 200
-        myObstacles.push(new Component(10, height, "green", x, 0));
-        myObstacles.push(new Component(10, x - height - gap, "green", x, height + gap));
+        // // y = myGameArea.canvas.height - 200
+        // myObstacles.push(new Component(10, height, "green", x, 0));
+        // myObstacles.push(new Component(10, x - height - gap, "green", x, height + gap));
+
+        //Fighter
+        let ranY = Math.floor(Math.random()*(y-30 - 0));
+        let ranY2 = Math.floor(Math.random()*(y-80 - 0));
+
+        newBaddie = new Component(50, 30, "img/baddie-1.png", x, ranY, "image")
+        newBaddie.speedX = -3;
+
+        //Astroids
+        let randomNumber = Math.floor(Math.random()*6+1);
+
+        let astroidHealth;
+        let astroidImg;
+        let astroidHeight;
+        let astroidWidth;
+
+        if(randomNumber == 1){
+            astroidImg = "img/astroid-3.png";
+            astroidHeight = 100;
+            astroidWidth = 100;
+            astroidHealth = 5;
+        } else if(randomNumber <= 3 ){
+            astroidImg = "img/astroid-1.png";
+            astroidHeight = 80;
+            astroidWidth = 80;
+            astroidHealth = 3;
+        } else{
+            astroidImg = "img/astroid-2.png";
+            astroidHeight = 50;
+            astroidWidth = 50;
+            astroidHealth = 2;
+        }
+
+        console.log('randomNumber:', randomNumber)
+        
+        newAstroid = new Component(astroidHeight, astroidWidth, astroidImg, x, ranY2, "image");
+        newAstroid.speedX = -1;
+        newAstroid.health = astroidHealth;
+
+        myObstacles.push(newBaddie);
+        // myObstacles.push(new Component(50, 30, "img/baddie-1.png", x + 50, ranY2, "image"));
+
+        myObstacles.push(newAstroid);
+
     }
     for (i = 0; i < myObstacles.length; i += 1) {
-        myObstacles[i].x += -2;
+        myObstacles[i].x += myObstacles[i].speedX;
         myObstacles[i].update();
+        // myObstacles[i].newPos();
     }
     for (i = 0; i < myObstacles.length; i += 1) {
-        if(myObstacles[i].x < 0){
+        if(myObstacles[i].x < -100){
             myObstacles.splice(i, 1);
-        } else if(true){
-
         }
     }
 }
 
+
 //Check for crashes
+///Takes in an array and a object and then returns a array with either: a false or a true and a index value
 function checkForCrashes(arrayOne, obj){
     for(j = 0; j < arrayOne.length; j += 1){
         if(obj.crashWith(arrayOne[j])){
@@ -321,21 +378,39 @@ function shootBullet(){
     }
 
     if((myGameArea.keys && myGameArea.keys[32]) && nextBullet == 0){
+
+        //Play bullet fire sound
+        playSound("triangle", 480, 0.5, 200, 0.6);
+
         //Spawn Bullet
-        myBullets.push(new Component(10, 5, "white", myGamePiece.x + myGamePiece.width, (myGamePiece.y + (myGamePiece.height / 2))));
+        let newBullet = new Component(14, 7, "img/bullet.png", myGamePiece.x + myGamePiece.width, (myGamePiece.y + myGamePiece.height / 2), "image");
+        newBullet.speedX = 6;
+        myBullets.push(newBullet);
         
         nextBullet = firerate;
     }
 
     for(i = 0; i < myBullets.length; i += 1){
-        myBullets[i].x += 6;
+        // myBullets[i].speedX = 6;
+        myBullets[i].y += myBullets[i].speedY;
         myBullets[i].update();
+
+        myBullets[i].newPos();
 
         // checkBullet(myBullets[i]);
         let crashCheck = checkForCrashes(myObstacles, myBullets[i]);
         if(crashCheck[0]){
+            //Play bullet hit sound
+            playSound("triangle",200,0.4,333,0.1,100,0.4,80,0.45);
+
             myBullets.splice(i, 1);
-            myObstacles.splice(crashCheck[1], 1);
+            let hitObstacle = myObstacles[crashCheck[1]];
+            if(hitObstacle.health <= 1){
+                myObstacles.splice(crashCheck[1], 1);
+            } else{
+                hitObstacle.health -= 1;
+            }
+            
         } else if(myBullets[i].x > gameAreaWidth){
             myBullets.splice(i, 1);
         }
@@ -351,7 +426,14 @@ function keyboardMove(){
 }
 
 function changeImage(){
-    myGamePiece.image.src = "img/quad-fighter-cut-moving.png";
+    myGamePiece.image.src = "img/Quad-Fighter-animated.gif";
+    // if(moving){
+        
+    //     moving = false;
+    // } else{
+
+    // }
+    
 }
 
 function moveUp(){
