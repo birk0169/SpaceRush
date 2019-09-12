@@ -4,6 +4,7 @@
 ////Variables
 //SCORE
 var score = 0;
+var timeBonus = 0;
 
 //GamePiece
 var myGamePiece;
@@ -24,8 +25,12 @@ var nextBullet = 0;
 
 //Obstacles
 var astroidsOn = false;
+var smallAstroidsOn = false;
 var extraAstroidsOn = false;
 var probeShipsOn = false;
+var heavyProbesOn = false;
+var advancedProbesOn = false;
+var patrolShipsOn = false;
 var cometsOn = false;
 
 var myObstacles = [];
@@ -159,6 +164,9 @@ function Component(width, height, color, x, y, type) {
 
     //health
     this.health = 0;
+
+    //Point value
+    this.pointsValue = 0;
 
     //Position
     this.x = x;
@@ -302,7 +310,11 @@ function updateGameArea(){
     
     spawnObstacles();
 
-    myScore.text = "SCORE: " + (score + myGameArea.frameNo);
+    if(myGameArea.frameNo > 300){
+        timeBonus += 1;
+    }
+
+    myScore.text = "SCORE: " + (score + timeBonus);
     myScore.update();
 
     
@@ -374,97 +386,38 @@ function spawnObstacles(){
         // myObstacles.push(new Component(10, height, "green", x, 0));
         // myObstacles.push(new Component(10, x - height - gap, "green", x, height + gap));
 
-        //Fighter
-        let ranY2 = Math.floor(Math.random()*(y-80 - 0));
-
-        let ranY;
-
+        
+        //Control Obstacles
         if(probeShipsOn){
-            //Random Y Axis
-            ranY = Math.floor(Math.random()*(y-30 - 0));
-
-            newBaddie = new Component(50, 30, "img/probe.gif", x, ranY, "image")
-            newBaddie.speedX = -3;
-
-            //Push probe Ship
-            myObstacles.push(newBaddie);
+            spawnProbe();
+        }
+        if(heavyProbesOn){
+            spawnHeavyProbe(40);
+        }
+        if(advancedProbesOn){
+            spawnAdvancedProbe();
+        }
+        if(patrolShipsOn){
+            spawnPatrolShip();
         }
         if(astroidsOn){
             //Astroids
-            let randomNumber = Math.floor(Math.random()*6+1);
-            let astroidHealth, astroidImg, astroidHeight, astroidWidth;
-
-            if(randomNumber == 1){
-                astroidImg = "img/astroid-3.png";
-                astroidHeight = 100;
-                astroidWidth = 100;
-                astroidHealth = 5;
-            } else if(randomNumber <= 3 ){
-                astroidImg = "img/astroid-1.png";
-                astroidHeight = 80;
-                astroidWidth = 80;
-                astroidHealth = 3;
-            } else{
-                astroidImg = "img/astroid-2.png";
-                astroidHeight = 50;
-                astroidWidth = 50;
-                astroidHealth = 2;
-            }
-
-            ranY = Math.floor(Math.random()*(y-astroidHeight - 0));
-
-            newAstroid = new Component(astroidHeight, astroidWidth, astroidImg, x, ranY, "image");
-            newAstroid.speedX = -1;
-            newAstroid.health = astroidHealth;
-
-            //Push astroid
-            myObstacles.push(newAstroid);
+            spawnAstroid();
         }
         if(extraAstroidsOn){
-            //Astroids
-            let randomNumber = Math.floor(Math.random()*6+1);
-            let astroidHealth, astroidImg, astroidHeight, astroidWidth;
-
-            if(randomNumber == 1){
-                astroidImg = "img/astroid-3.png";
-                astroidHeight = 100;
-                astroidWidth = 100;
-                astroidHealth = 5;
-            } else if(randomNumber <= 3 ){
-                astroidImg = "img/astroid-1.png";
-                astroidHeight = 80;
-                astroidWidth = 80;
-                astroidHealth = 3;
-            } else{
-                astroidImg = "img/astroid-2.png";
-                astroidHeight = 50;
-                astroidWidth = 50;
-                astroidHealth = 2;
-            }
-
-            ranY = Math.floor(Math.random()*(y-astroidHeight - 0));
-
-            newAstroid = new Component(astroidHeight, astroidWidth, astroidImg, x + 60, ranY, "image");
-            newAstroid.speedX = -1;
-            newAstroid.health = astroidHealth;
-
-            //Push astroid
-            myObstacles.push(newAstroid);
+            spawnAstroid(60);
+        }
+        if(smallAstroidsOn){
+            spawnSmallAstroid();
         }
         if(cometsOn){
-            ranY = Math.floor(Math.random()*(y-30 - 0));
-
-            newComet = new Component(90, 30, "img/comet.png", x, ranY, "image")
-            newComet.speedX = -9;
-
-            //Push probe Ship
-            myObstacles.push(newComet);
+            spawnComet();
         }
         
 
     }
     for (i = 0; i < myObstacles.length; i += 1) {
-        myObstacles[i].x += myObstacles[i].speedX;
+        myObstacles[i].newPos();
         myObstacles[i].update();
         // myObstacles[i].newPos();
     }
@@ -473,6 +426,158 @@ function spawnObstacles(){
             myObstacles.splice(i, 1);
         }
     }
+}
+
+function spawnAstroid(xOffset = 0){
+    //Astroids
+    let randomNumber = Math.floor(Math.random()*6+1);
+    let astroidHealth, astroidImg, astroidHeight, astroidWidth;
+
+    let y = myGameArea.canvas.height;
+    let x = myGameArea.canvas.width;
+
+    if(randomNumber == 1){
+        astroidImg = "img/astroids/astroid-large.png";
+        astroidHeight = 100;
+        astroidWidth = 100;
+        astroidHealth = 5;
+    } else if(randomNumber <= 3 ){
+        astroidImg = "img/astroids/astroid-medium.png";
+        astroidHeight = 80;
+        astroidWidth = 80;
+        astroidHealth = 3;
+    } else{
+        astroidImg = "img/astroids/astroid-small.png";
+        astroidHeight = 50;
+        astroidWidth = 50;
+        astroidHealth = 2;
+    }
+
+    let ranY = Math.floor(Math.random()*(y-astroidHeight - 0));
+
+    let newAstroid = new Component(astroidHeight, astroidWidth, astroidImg, x + xOffset, ranY, "image");
+    newAstroid.speedX = -1;
+    newAstroid.health = astroidHealth;
+
+    //Push astroid
+    myObstacles.push(newAstroid);
+}
+
+function spawnSmallAstroid(xOffset = 0){
+    //Astroids
+    let randomNumber = Math.floor(Math.random()*6+1);
+    let astroidHealth, astroidImg, astroidHeight, astroidWidth;
+
+    let y = myGameArea.canvas.height;
+    let x = myGameArea.canvas.width;
+
+    if(randomNumber == 1){
+        astroidImg = "img/astroids/astroid-medium.png";
+        astroidHeight = 80;
+        astroidWidth = 80;
+        astroidHealth = 3;
+    } else if(randomNumber <= 3 ){
+        astroidImg = "img/astroids/astroid-medium-small.png";
+        astroidHeight = 60;
+        astroidWidth = 60;
+        astroidHealth = 3;
+    } else{
+        astroidImg = "img/astroids/astroid-small.png";
+        astroidHeight = 50;
+        astroidWidth = 50;
+        astroidHealth = 2;
+    }
+
+    let ranY = Math.floor(Math.random()*(y-astroidHeight - 0));
+
+    let newAstroid = new Component(astroidHeight, astroidWidth, astroidImg, x + xOffset, ranY, "image");
+    newAstroid.speedX = -1;
+    newAstroid.health = astroidHealth;
+
+    //Push astroid
+    myObstacles.push(newAstroid);
+}
+
+function spawnComet(xOffset = 0){
+    let y = myGameArea.canvas.height;
+    let x = myGameArea.canvas.width;
+
+    let ranY = Math.floor(Math.random()*(y-30 - 0));
+
+    let newComet = new Component(90, 30, "img/comet.png", x + xOffset, ranY, "image")
+    newComet.speedX = -9;
+
+    //Push probe Ship
+    myObstacles.push(newComet);
+}
+
+function spawnProbe(xOffset = 0){
+    let y = myGameArea.canvas.height;
+    let x = myGameArea.canvas.width;
+
+    let ranY = Math.floor(Math.random()*(y-30 - 0));
+
+    let newObstacle = new Component(50, 30, "img/probe.gif", x + xOffset, ranY, "image")
+    newObstacle.pointsValue = 50;
+    newObstacle.speedX = -3;
+
+    //Push probe Ship
+    myObstacles.push(newObstacle);
+}
+
+function spawnAdvancedProbe(xOffset = 0){
+    //Advanced Probe
+    let y = myGameArea.canvas.height;
+    let x = myGameArea.canvas.width;
+
+    let ranY = Math.floor(Math.random()*(y-50 - 0));
+
+    let randomNumber = Math.floor(Math.random()*2+1);
+
+    let newObstacle = new Component(35, 50, "img/obstacles/advanced-probe.png", x + xOffset, ranY, "image");
+    newObstacle.pointsValue = 150;
+    newObstacle.speedX = -4;
+
+    if(randomNumber == 1){
+        newObstacle.speedY = 1;
+    } else{
+        newObstacle.speedY = -1;
+    }
+
+
+    myObstacles.push(newObstacle);
+}
+
+function spawnHeavyProbe(xOffset = 0){
+    //Advanced Probe
+    let y = myGameArea.canvas.height;
+    let x = myGameArea.canvas.width;
+
+    let ranY = Math.floor(Math.random()*(y-30 - 0));
+
+
+    let newObstacle = new Component(55, 30, "img/obstacles/heavy-probe.png", x + xOffset, ranY, "image");
+    newObstacle.pointsValue = 100;
+    newObstacle.speedX = -3;
+    newObstacle.health = 2;
+
+    myObstacles.push(newObstacle);
+}
+
+function spawnPatrolShip(xOffset = 0){
+    //Advanced Probe
+    let y = myGameArea.canvas.height;
+    let x = myGameArea.canvas.width;
+
+    let ranY = Math.floor(Math.random()*(y-40 - 0));
+
+
+    let newObstacle = new Component(65, 40, "img/obstacles/patrol-ship.png", x + xOffset, ranY, "image");
+    newObstacle.pointsValue = 200;
+    newObstacle.speedX = -4;
+    newObstacle.health = 2;
+
+    myObstacles.push(newObstacle);
 }
 
 
@@ -522,10 +627,14 @@ function shootBullet(){
             myBullets.splice(i, 1);
             let hitObstacle = myObstacles[crashCheck[1]];
             if(hitObstacle.health <= 1){
+                //Points for destroying obstacle
+                score += myObstacles[crashCheck[1]].pointsValue;
+
+                //remove obstacle from array
                 myObstacles.splice(crashCheck[1], 1);
 
-                //Temp point for destroying obstacles
-                score += 50;
+                
+                
             } else{
                 hitObstacle.health -= 1;
             }
@@ -537,16 +646,17 @@ function shootBullet(){
 }
 
 function ObstacleControl(){
+    //2000 added for testing
     let fNo = myGameArea.frameNo;
 
-    if(fNo == 600){
+    if(fNo == 200){
         //Enter Astroid Field
         astroidsOn = true;
-
-        myGameMessage.x = -500;
-        myGameMessage.image.src = "img/messages/enter-astroid.png";
     }
     if(fNo == 1000){
+        myGameMessage.x = -500;
+        myGameMessage.image.src = "img/messages/enter-astroid.png";
+
         extraAstroidsOn = true;
     }
     if(fNo == 1500){
@@ -566,7 +676,8 @@ function ObstacleControl(){
         myGameMessage.image.src = "img/messages/enter-recon.png";
 
         probeShipsOn = true;
-        astroidsOn = true;
+        patrolShipsOn = true;
+        smallAstroidsOn = true;
     }
 }
 
@@ -590,12 +701,12 @@ function changeImage(){
 }
 
 function moveUp(){
-    myGamePiece.speedY = -4;
+    myGamePiece.speedY = -6;
     changeImage();
 }
 
 function moveDown(){
-    myGamePiece.speedY = 4;
+    myGamePiece.speedY = 6;
     changeImage();
 }
 
