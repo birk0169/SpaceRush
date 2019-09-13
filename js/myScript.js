@@ -16,12 +16,21 @@ var myPieceImgSrc = "img/quad-fighter-cut.png";
 var myPieceX = 10;
 var myPieceY = 210;
 
-var moving = true;
+//Invincibility
+var invincibilityOn = false;
+var invincibilityTimer = 100;
+var invincilityFrame = 1;
+
+// var moving = true;
 
 //Projectiles
 var myBullets = [];
 var firerate = 20;
 var nextBullet = 0;
+
+var ultraBulletOn = false;
+var superBulletOn = true;
+var wideBulletOn = true;
 
 //Obstacles
 var astroidsOn = false;
@@ -168,6 +177,9 @@ function Component(width, height, color, x, y, type) {
     //Point value
     this.pointsValue = 0;
 
+    //Bullet
+    this.bulletDamage = 1;
+
     //Position
     this.x = x;
     this.y = y; 
@@ -276,6 +288,7 @@ function startGame(){
 
     myGamePiece = new Component(myPieceWidth, myPieceHeight, myPieceImgSrc, myPieceX, myPieceY, "image");
     myGamePiece.isShip = true;
+    myGamePiece.health = 3;
     
     myScore = new Component("30px", "Consolas", "white", 280, 40, "text");
 
@@ -293,13 +306,32 @@ function startGame(){
 //Update
 function updateGameArea(){
     
-    //Check for crashes
+    //Check for player crashes
     if(checkForCrashes(myObstacles, myGamePiece)[0]){
-        //Play game over sound
-        playSound("sine", 300, 1.2, 150, 0.5,1,0.9);
+        
+        if(!invincibilityOn){
+            //Play game over sound
+            playSound("sine", 300, 1.2, 150, 0.5,1,0.9);
 
-        myGameArea.stop();
-          return;
+            //Lowe player Health
+            myGamePiece.health -= 1;
+
+            if(myGamePiece.health <= 0){
+                //Game over
+                myGameArea.stop();
+                return;
+            } else{
+                //Start invincibility
+                invincibilityOn = true;
+                invincibilityTimer = 0;
+            }
+        }
+    }
+
+    if(invincibilityOn && invincibilityTimer != 100){
+        invincibilityTimer++;
+    } else{
+        invincibilityOn = false;
     }
     
     
@@ -320,6 +352,7 @@ function updateGameArea(){
     
 
     clearMove(); 
+    // slowDown();
 
     // //Movement mouse control
     // if(myGameArea.x && myGameArea.y){
@@ -603,9 +636,44 @@ function shootBullet(){
         //Play bullet fire sound
         playSound("triangle", 480, 0.5, 200, 0.6);
 
+
+        let bulletWidth, bulletHeight, bulletImgSrc, bulletDamage;
+
         //Spawn Bullet
-        let newBullet = new Component(14, 7, "img/bullet.png", myGamePiece.x + myGamePiece.width, (myGamePiece.y + myGamePiece.height / 2), "image");
+        
+        if(ultraBulletOn){
+            bulletWidth = 14;
+            bulletHeight = 14;
+            bulletImgSrc = "img/bullets/ultra-bullet.png";
+            bulletDamage = 4;
+        } else if(superBulletOn && wideBulletOn){
+            bulletWidth = 14;
+            bulletHeight = 20;
+            bulletImgSrc = "img/bullets/super-wide-bullet.png";
+            bulletDamage = 2;
+        } else if(superBulletOn){
+            bulletWidth = 14;
+            bulletHeight = 9;
+            bulletImgSrc = "img/bullets/super-bullet.png";
+            bulletDamage = 2;
+        } else if(wideBulletOn){
+            bulletWidth = 14;
+            bulletHeight = 20;
+            bulletImgSrc = "img/bullets/wide-bullet.png";
+            bulletDamage = 1;
+        } else{
+            bulletWidth = 14;
+            bulletHeight = 7;
+            bulletImgSrc = "img/bullets/bullet.png";
+            bulletDamage = 1;
+        }
+
+        let newBullet = new Component(bulletWidth, bulletHeight, bulletImgSrc, myGamePiece.x + myGamePiece.width, (myGamePiece.y + myGamePiece.height / 2 - bulletHeight / 2), "image");
+
         newBullet.speedX = 6;
+
+        newBullet.bulletDamage = bulletDamage;
+
         myBullets.push(newBullet);
         
         nextBullet = firerate;
@@ -624,9 +692,9 @@ function shootBullet(){
             //Play bullet hit sound
             playSound("triangle",200,0.4,333,0.1,100,0.4,80,0.45);
 
-            myBullets.splice(i, 1);
+            
             let hitObstacle = myObstacles[crashCheck[1]];
-            if(hitObstacle.health <= 1){
+            if(hitObstacle.health <= myBullets[i].bulletDamage){
                 //Points for destroying obstacle
                 score += myObstacles[crashCheck[1]].pointsValue;
 
@@ -634,10 +702,11 @@ function shootBullet(){
                 myObstacles.splice(crashCheck[1], 1);
 
                 
-                
             } else{
-                hitObstacle.health -= 1;
+                hitObstacle.health -= myBullets[i].bulletDamage;
             }
+
+            myBullets.splice(i, 1);
             
         } else if(myBullets[i].x > gameAreaWidth){
             myBullets.splice(i, 1);
@@ -646,7 +715,6 @@ function shootBullet(){
 }
 
 function ObstacleControl(){
-    //2000 added for testing
     let fNo = myGameArea.frameNo;
 
     if(fNo == 200){
@@ -683,54 +751,119 @@ function ObstacleControl(){
 
 //Movement
 function keyboardMove(){
-    if (myGameArea.keys && myGameArea.keys[37]) {moveRight(); }
-    if (myGameArea.keys && myGameArea.keys[39]) {moveLeft(); }
-    if (myGameArea.keys && myGameArea.keys[38]) {moveUp(); }
-    if (myGameArea.keys && myGameArea.keys[40]) {moveDown(); }
+    if(myGameArea.keys){
+        if (myGameArea.keys[37]) {moveRight(); }
+        if (myGameArea.keys[39]) {moveLeft(); }
+        if (myGameArea.keys[38]) {moveUp(); }
+        if (myGameArea.keys[40]) {moveDown(); }
+
+        if((myGameArea.keys[37] || myGameArea.keys[38]) || (myGameArea.keys[39] || myGameArea.keys[40])){
+            changeImage(true);
+            // invincibilityFlicker();
+        }
+    }
+
+    // if (myGameArea.keys && myGameArea.keys[37]) {moveRight(); }
+    // if (myGameArea.keys && myGameArea.keys[39]) {moveLeft(); }
+    // if (myGameArea.keys && myGameArea.keys[38]) {moveUp(); }
+    // if (myGameArea.keys && myGameArea.keys[40]) {moveDown(); }
 }
 
-function changeImage(){
-    myGamePiece.image.src = "img/Quad-Fighter-animated.gif";
-    // if(moving){
-        
-    //     moving = false;
-    // } else{
-
-    // }
+function changeImage(moving = false){
+    if(invincibilityOn){
+        if(moving){
+            invincibilityFlicker(true);
+        } else{
+            invincibilityFlicker();
+        }
+    } else{
+        if(moving){
+            myGamePiece.image.src = "img/ship/quad-Fighter-moving.png";
+        } else{
+            myGamePiece.image.src = "img/quad-fighter-cut.png";
+        }
+    }
     
+}
+
+function invincibilityFlicker(moving = false){
+    let moveString = "";
+    if(moving){
+        moveString = "-moving"
+    }
+
+
+
+    if(invincilityFrame == 1){
+        myGamePiece.image.src = "img/ship/quad-fighter" + moveString +".png";
+    } else if(invincilityFrame == 2 || invincilityFrame == 8){
+        myGamePiece.image.src = "img/ship/quad-fighter" + moveString +"-90%.png";
+    } else if(invincilityFrame == 3 || invincilityFrame == 7){
+        myGamePiece.image.src = "img/ship/quad-fighter" + moveString +"-80%.png";
+    } else if(invincilityFrame == 4 || invincilityFrame == 6){
+        myGamePiece.image.src = "img/ship/quad-fighter" + moveString +"-60%.png";
+    } else if(invincilityFrame == 5){
+        myGamePiece.image.src = "img/ship/quad-fighter" + moveString +"-50%.png";
+    }
+
+    if(invincilityFrame != 8){
+        invincilityFrame ++;
+    } else{
+        invincilityFrame = 1;
+    }
 }
 
 function moveUp(){
     myGamePiece.speedY = -6;
-    changeImage();
+    // changeImage();
+    // invincibilityFlicker();
 }
 
 function moveDown(){
     myGamePiece.speedY = 6;
-    changeImage();
+    // changeImage();
 }
 
 function moveLeft(){
     myGamePiece.speedX = 4;
-    changeImage();
+    // changeImage();
 }
 
 function moveRight(){
     myGamePiece.speedX = -4;
-    changeImage();
+    // changeImage();
 }
 
 function clearMove(){
-    myGamePiece.image.src = "img/quad-fighter-cut.png";
+    changeImage();
     myGamePiece.speedX = 0;
     myGamePiece.speedY = 0;
 
+}
+
+function slowDown(){
+    myGamePiece.image.src = myPieceImgSrc;
     //Slow down
-    // if(myGamePiece.speed > 0){
-    // 	myGamePiece.speed -= 0.1;
-    // } else if (myGamePiece.speed < 0){
-    // 	myGamePiece.speed += 0.1;
-    // }
+
+    //Y axis
+    if(myGamePiece.speedY > 0){
+    	myGamePiece.speedY -= 0.5;
+    } else if (myGamePiece.speedY < 0){
+    	myGamePiece.speedY += 0.5;
+    }
+    else{
+        myGamePiece.speedY = 0;
+    }
+
+    //X axis
+    if(myGamePiece.speedX > 0){
+    	myGamePiece.speedX -= 0.5;
+    } else if (myGamePiece.speedX < 0){
+    	myGamePiece.speedX += 0.5;
+    }
+    else{
+        myGamePiece.speedX = 0;
+    }
 }
 
 
