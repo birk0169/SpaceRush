@@ -2,6 +2,9 @@
 // import Component from "/js/Component";
 
 ////Variables
+//GameTime
+var gameTime = 0;
+
 //SCORE
 var score = 0;
 var timeBonus = 0;
@@ -28,9 +31,10 @@ var myBullets = [];
 var firerate = 20;
 var nextBullet = 0;
 
+var ultimaBulletOn = true;
 var ultraBulletOn = false;
-var superBulletOn = true;
-var wideBulletOn = true;
+var superBulletOn = false;
+var wideBulletOn = false;
 
 //Obstacles
 var astroidsOn = false;
@@ -151,7 +155,7 @@ var myBackgroundArea = {
 ////Contructors
 function Component(width, height, color, x, y, type) {
     this.type = type;
-    if (type == "image" || (type == "background" || type == "message")) {
+    if ((type == "image" || type == "obstacle") || (type == "background" || type == "message")) {
         this.image = new Image();
         this.image.src = color;
     } else if(type == "gif"){
@@ -168,8 +172,11 @@ function Component(width, height, color, x, y, type) {
     this.speedX = 0;
     this.speedY = 0;
 
-    //Is ship
+    //Is ship?
     this.isShip = false;
+
+    //Is obstacle?
+    this.isObstacle = false;
 
     //health
     this.health = 0;
@@ -190,7 +197,7 @@ function Component(width, height, color, x, y, type) {
     
 
     //If Text
-    if (type == "image" || (type == "background" || type == "message")) {
+    if ((type == "image" || type == "obstacle") || (type == "background" || type == "message")) {
         ctx.drawImage(this.image, 
             this.x, 
             this.y,
@@ -211,6 +218,28 @@ function Component(width, height, color, x, y, type) {
         ctx.fillRect(this.x, this.y, this.width, this.height);
       }
     }
+
+    this.onDestruction = function(){
+        console.log("it works so far");
+    }
+
+    this.abilityList = [];
+    this.abilityInterval = 0;
+    this.obstacleFunctions = function(){
+        if(this.abilityList.length != 0){
+            if(gameTime % this.abilityInterval == 0){
+                for(a = 0; a < this.abilityList.length; a += 1){
+                    triggerEnemyAbility(this.abilityList[a], this.x, this.y + this.height /2);
+                }
+
+                // spawnEnemyBullet(this.x, this.y + this.width /2);
+                
+            }
+        }
+    }
+    
+    
+
     //New Position
     this.newPos = function() {
       this.x += this.speedX;
@@ -292,12 +321,18 @@ function startGame(){
     
     myScore = new Component("30px", "Consolas", "white", 280, 40, "text");
 
+    myHeart = new Component(29, 29, "img/icons/blue-heart.png", 20, 20, "image");
+    
+    myHealth = new Component("26px", "Consolas", "white", 55, 43, "text");
+
     //Game Background layer
     myBackground = new Component(880, 480, "img/starry-sky.png", 0, 0, "background");
 
     myMessageArea.start();
     myGameArea.start();
     myBackgroundArea.start();
+
+    
     
 }
 
@@ -339,6 +374,8 @@ function updateGameArea(){
 
     myGameArea.clear();
     myGameArea.frameNo += 1;
+
+    gameTime = myGameArea.frameNo;
     
     spawnObstacles();
 
@@ -348,6 +385,11 @@ function updateGameArea(){
 
     myScore.text = "SCORE: " + (score + timeBonus);
     myScore.update();
+
+    myHealth.text = "x" + (myGamePiece.health - 1);
+    myHealth.update();
+    myHeart.update();
+    
 
     
 
@@ -396,7 +438,7 @@ function everyInterval(n) {
   }
 
 function spawnObstacles(){
-    var x, y, height, gap, minHeight, maxHeight, minGap, maxGap;
+    // var x, y, height, gap, minHeight, maxHeight, minGap, maxGap;
     
     //EveryInterval control the frequency of obstacles
     if (myGameArea.frameNo == 1 || everyInterval(100)) {
@@ -452,6 +494,7 @@ function spawnObstacles(){
     for (i = 0; i < myObstacles.length; i += 1) {
         myObstacles[i].newPos();
         myObstacles[i].update();
+        myObstacles[i].obstacleFunctions();
         // myObstacles[i].newPos();
     }
     for (i = 0; i < myObstacles.length; i += 1) {
@@ -610,6 +653,31 @@ function spawnPatrolShip(xOffset = 0){
     newObstacle.speedX = -4;
     newObstacle.health = 2;
 
+    // newAstroid.isObstacle = true;
+
+    newObstacle.abilityList.push(1);
+
+    newObstacle.abilityInterval = 200;
+
+    myObstacles.push(newObstacle);
+}
+
+//Enemy Bullets
+function triggerEnemyAbility(abilityId, x, y){
+    
+    switch(abilityId){
+        case 1:
+            spawnEnemyBullet(x, y);
+            break;
+    }
+}
+
+function spawnEnemyBullet(x, y){
+    let newObstacle = new Component(16, 9, "img/bullets/e-blue-bullet.png", x, y - 4.5, "image");
+    
+
+    newObstacle.speedX = -6
+
     myObstacles.push(newObstacle);
 }
 
@@ -636,12 +704,16 @@ function shootBullet(){
         //Play bullet fire sound
         playSound("triangle", 480, 0.5, 200, 0.6);
 
-
+        //Set bullet variables
         let bulletWidth, bulletHeight, bulletImgSrc, bulletDamage;
 
-        //Spawn Bullet
-        
-        if(ultraBulletOn){
+        //Spawn Bullet type
+        if(ultimaBulletOn){
+            bulletWidth = 25;
+            bulletHeight = 25;
+            bulletImgSrc = "img/bullets/ultima-bullet.png";
+            bulletDamage = 6;
+        } else if(ultraBulletOn){
             bulletWidth = 14;
             bulletHeight = 14;
             bulletImgSrc = "img/bullets/ultra-bullet.png";
@@ -698,6 +770,8 @@ function shootBullet(){
                 //Points for destroying obstacle
                 score += myObstacles[crashCheck[1]].pointsValue;
 
+                myObstacles[crashCheck[1]].onDestruction();
+
                 //remove obstacle from array
                 myObstacles.splice(crashCheck[1], 1);
 
@@ -715,7 +789,7 @@ function shootBullet(){
 }
 
 function ObstacleControl(){
-    let fNo = myGameArea.frameNo;
+    let fNo = myGameArea.frameNo + 2800;
 
     if(fNo == 200){
         //Enter Astroid Field
