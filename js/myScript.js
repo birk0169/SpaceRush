@@ -1117,7 +1117,7 @@ changeImage = (moving = false) =>{
         }
     } else{
         if(moving){
-            myGamePiece.image.src = "img/ship/quad-Fighter-moving.png";
+            myGamePiece.image.src = "img/ship/quad-fighter-moving.png";
         } else{
             myGamePiece.image.src = "img/quad-fighter-cut.png";
         }
