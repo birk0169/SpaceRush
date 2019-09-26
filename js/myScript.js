@@ -1,6 +1,11 @@
 //Import
 // import Component from "/js/Component";
 
+// import ImageComponent from "Component.js";
+
+// var test = new ImageComponent(myPieceWidth  * sizeMod, myPieceHeight * sizeMod, myPieceImgSrc, myPieceX, myPieceY)
+// console.log(test);
+
 ////Variables
 //GameTime
 var gameTime = 0;
@@ -12,9 +17,11 @@ var timeBonus = 0;
 //GamePiece
 var myGamePiece;
 
-var myPieceWidth = 80;
-var myPieceHeight = 70;
-var myPieceColor = "red";
+const myPieceWidth = 40;
+const myPieceHeight = 35;
+// var myPieceWidth = 40;
+// var myPieceHeight = 35;
+// var myPieceColor = "red";
 var myPieceImgSrc = "img/quad-fighter-cut.png";
 var myPieceX = 10;
 var myPieceY = 210;
@@ -31,10 +38,10 @@ var myBullets = [];
 var firerate = 20;
 var nextBullet = 0;
 
-var ultimaBulletOn = true;
+var ultimaBulletOn = false;
 var ultraBulletOn = false;
 var superBulletOn = false;
-var wideBulletOn = false;
+var wideBulletOn = true;
 
 //Obstacles
 var astroidsOn = false;
@@ -45,8 +52,14 @@ var heavyProbesOn = false;
 var advancedProbesOn = false;
 var patrolShipsOn = false;
 var cometsOn = false;
+var minesOn = false;
+var moreMinesOn = false;
 
+//Obstacle array
 var myObstacles = [];
+
+//Powerups
+var myPowerUps = [];
 
 //Messages
 var myGameMessage;
@@ -58,8 +71,10 @@ var myScore;
 var myBackground;
 
 //Game Area
-var gameAreaWidth = 880;
-var gameAreaHeight = 480;
+const gameAreaWidth = 980;
+const gameAreaHeight = 580;
+
+const sizeMod = 1;
 
 var myGameArea = {
     canvas : document.createElement("canvas"),
@@ -166,6 +181,9 @@ function Component(width, height, color, x, y, type) {
     this.width = width;
     this.height = height;
 
+    //Angle
+    // this.angle = 0;
+
     //Hit Box: to be added
 
     //Speed
@@ -193,7 +211,15 @@ function Component(width, height, color, x, y, type) {
     this.update = function() {
         if(type == "background"){ctx = myBackgroundArea.context;}
         else if(type == "message"){ctx = myMessageArea.context;} 
-        else{ctx = myGameArea.context;}
+        else{
+            ctx = myGameArea.context;
+            ctx.save();
+            // ctx.translate(this.x, this.y);
+            // ctx.rotate(this.angle);
+            // ctx.fillStyle = color;
+            // ctx.fillRect(this.width / -2, this.height / -2, this.width, this.height);
+            // ctx.restore();    
+        }
     
 
     //If Text
@@ -219,8 +245,14 @@ function Component(width, height, color, x, y, type) {
       }
     }
 
+    this.abilityOnDestructionList = [];
     this.onDestruction = function(){
-        console.log("it works so far");
+        // console.log("it works so far");
+        if(this.abilityOnDestructionList.length != 0){
+            for(b = 0; b < this.abilityOnDestructionList.length; b += 1){
+                triggerEnemyAbility(this.abilityOnDestructionList[b], this.x, this.y + this.height /2, this.width);
+            }
+        }
     }
 
     this.abilityList = [];
@@ -229,17 +261,13 @@ function Component(width, height, color, x, y, type) {
         if(this.abilityList.length != 0){
             if(gameTime % this.abilityInterval == 0){
                 for(a = 0; a < this.abilityList.length; a += 1){
-                    triggerEnemyAbility(this.abilityList[a], this.x, this.y + this.height /2);
+                    triggerEnemyAbility(this.abilityList[a], this.x, this.y + this.height /2, this.height);
                 }
-
-                // spawnEnemyBullet(this.x, this.y + this.width /2);
                 
             }
         }
     }
     
-    
-
     //New Position
     this.newPos = function() {
       this.x += this.speedX;
@@ -315,7 +343,7 @@ function startGame(){
 
     myGameMessage = new Component(500, 100, "img/game-start.png", -500, 195, "message");
 
-    myGamePiece = new Component(myPieceWidth, myPieceHeight, myPieceImgSrc, myPieceX, myPieceY, "image");
+    myGamePiece = new Component(myPieceWidth  * sizeMod, myPieceHeight * sizeMod, myPieceImgSrc, myPieceX, myPieceY, "image");
     myGamePiece.isShip = true;
     myGamePiece.health = 3;
     
@@ -326,7 +354,7 @@ function startGame(){
     myHealth = new Component("26px", "Consolas", "white", 55, 43, "text");
 
     //Game Background layer
-    myBackground = new Component(880, 480, "img/starry-sky.png", 0, 0, "background");
+    myBackground = new Component(gameAreaWidth, gameAreaHeight, "img/starry-sky-yellow.png", 0, 0, "background");
 
     myMessageArea.start();
     myGameArea.start();
@@ -339,7 +367,7 @@ function startGame(){
 
 
 //Update
-function updateGameArea(){
+updateGameArea = () => {
     
     //Check for player crashes
     if(checkForCrashes(myObstacles, myGamePiece)[0]){
@@ -432,12 +460,12 @@ function updateGameArea(){
     
 }
 
-function everyInterval(n) {
+everyInterval = n => {
     if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
     return false;
   }
 
-function spawnObstacles(){
+spawnObstacles = () => {
     // var x, y, height, gap, minHeight, maxHeight, minGap, maxGap;
     
     //EveryInterval control the frequency of obstacles
@@ -461,7 +489,8 @@ function spawnObstacles(){
         // myObstacles.push(new Component(10, height, "green", x, 0));
         // myObstacles.push(new Component(10, x - height - gap, "green", x, height + gap));
 
-        
+        // spawnPirateFighter();
+        // spawnPirateDualFighter();
         //Control Obstacles
         if(probeShipsOn){
             spawnProbe();
@@ -488,6 +517,12 @@ function spawnObstacles(){
         if(cometsOn){
             spawnComet();
         }
+        if(minesOn){
+            spawnMine();
+        }
+        if(moreMinesOn){
+            spawnMine(60);
+        }
         
 
     }
@@ -504,7 +539,7 @@ function spawnObstacles(){
     }
 }
 
-function spawnAstroid(xOffset = 0){
+spawnAstroid = (xOffset = 0) => {
     //Astroids
     let randomNumber = Math.floor(Math.random()*6+1);
     let astroidHealth, astroidImg, astroidHeight, astroidWidth;
@@ -539,7 +574,7 @@ function spawnAstroid(xOffset = 0){
     myObstacles.push(newAstroid);
 }
 
-function spawnSmallAstroid(xOffset = 0){
+spawnSmallAstroid = (xOffset = 0) =>{
     //Astroids
     let randomNumber = Math.floor(Math.random()*6+1);
     let astroidHealth, astroidImg, astroidHeight, astroidWidth;
@@ -574,7 +609,7 @@ function spawnSmallAstroid(xOffset = 0){
     myObstacles.push(newAstroid);
 }
 
-function spawnComet(xOffset = 0){
+spawnComet = (xOffset = 0) => {
     let y = myGameArea.canvas.height;
     let x = myGameArea.canvas.width;
 
@@ -587,13 +622,13 @@ function spawnComet(xOffset = 0){
     myObstacles.push(newComet);
 }
 
-function spawnProbe(xOffset = 0){
+spawnProbe = (xOffset = 0) => {
     let y = myGameArea.canvas.height;
     let x = myGameArea.canvas.width;
 
     let ranY = Math.floor(Math.random()*(y-30 - 0));
 
-    let newObstacle = new Component(50, 30, "img/probe.gif", x + xOffset, ranY, "image")
+    let newObstacle = new Component(50 * sizeMod, 30 * sizeMod, "img/probe.gif", x + xOffset, ranY, "image")
     newObstacle.pointsValue = 50;
     newObstacle.speedX = -3;
 
@@ -601,7 +636,7 @@ function spawnProbe(xOffset = 0){
     myObstacles.push(newObstacle);
 }
 
-function spawnAdvancedProbe(xOffset = 0){
+spawnAdvancedProbe = (xOffset = 0) => {
     //Advanced Probe
     let y = myGameArea.canvas.height;
     let x = myGameArea.canvas.width;
@@ -610,7 +645,7 @@ function spawnAdvancedProbe(xOffset = 0){
 
     let randomNumber = Math.floor(Math.random()*2+1);
 
-    let newObstacle = new Component(35, 50, "img/obstacles/advanced-probe.png", x + xOffset, ranY, "image");
+    let newObstacle = new Component(35 * sizeMod, 50 * sizeMod, "img/obstacles/advanced-probe.png", x + xOffset, ranY, "image");
     newObstacle.pointsValue = 150;
     newObstacle.speedX = -4;
 
@@ -624,7 +659,7 @@ function spawnAdvancedProbe(xOffset = 0){
     myObstacles.push(newObstacle);
 }
 
-function spawnHeavyProbe(xOffset = 0){
+spawnHeavyProbe = (xOffset = 0) => {
     //Advanced Probe
     let y = myGameArea.canvas.height;
     let x = myGameArea.canvas.width;
@@ -632,7 +667,7 @@ function spawnHeavyProbe(xOffset = 0){
     let ranY = Math.floor(Math.random()*(y-30 - 0));
 
 
-    let newObstacle = new Component(55, 30, "img/obstacles/heavy-probe.png", x + xOffset, ranY, "image");
+    let newObstacle = new Component(55 * sizeMod, 30 * sizeMod, "img/obstacles/heavy-probe.png", x + xOffset, ranY, "image");
     newObstacle.pointsValue = 100;
     newObstacle.speedX = -3;
     newObstacle.health = 2;
@@ -640,7 +675,7 @@ function spawnHeavyProbe(xOffset = 0){
     myObstacles.push(newObstacle);
 }
 
-function spawnPatrolShip(xOffset = 0){
+spawnPatrolShip = (xOffset = 0) => {
     //Advanced Probe
     let y = myGameArea.canvas.height;
     let x = myGameArea.canvas.width;
@@ -648,7 +683,8 @@ function spawnPatrolShip(xOffset = 0){
     let ranY = Math.floor(Math.random()*(y-40 - 0));
 
 
-    let newObstacle = new Component(65, 40, "img/obstacles/patrol-ship.png", x + xOffset, ranY, "image");
+    let newObstacle = new Component(65 * sizeMod, 40 * sizeMod, "img/obstacles/patrol-ship.png", x + xOffset, ranY, "image");
+    // let newObstacle = new Component(52, 52, "img/obstacles/mine.png", x + xOffset, ranY, "image");
     newObstacle.pointsValue = 200;
     newObstacle.speedX = -4;
     newObstacle.health = 2;
@@ -662,17 +698,125 @@ function spawnPatrolShip(xOffset = 0){
     myObstacles.push(newObstacle);
 }
 
+spawnMine = (xOffset = 0) => {
+    //Advanced Probe
+    let y = myGameArea.canvas.height;
+    let x = myGameArea.canvas.width;
+
+    let ranY = Math.floor(Math.random()*(y-40 - 0));
+
+
+    // let newObstacle = new Component(65, 40, "img/obstacles/patrol-ship.png", x + xOffset, ranY, "image");
+    let newObstacle = new Component(52 * sizeMod, 52 * sizeMod, "img/obstacles/mine.png", x + xOffset, ranY, "image");
+    newObstacle.pointsValue = 100;
+    newObstacle.speedX = -1.5;
+    newObstacle.health = 1;
+
+    // newAstroid.isObstacle = true;
+
+    // newObstacle.abilityList.push(1);
+    newObstacle.abilityOnDestructionList.push(101);
+    
+
+    newObstacle.abilityInterval = 200;
+
+    myObstacles.push(newObstacle);
+}
+
+spawnCruiser = (xOffset = 0) => {
+    let y = myGameArea.canvas.height;
+    let x = myGameArea.canvas.width;
+
+    let ranY = Math.floor(Math.random()*(y-40 - 0));
+
+
+    let newObstacle = new Component(158 * sizeMod, 54 * sizeMod, "img/obstacles/large-ship.png", x + xOffset, ranY, "image");
+    newObstacle.pointsValue = 500;
+    newObstacle.speedX = -3;
+    newObstacle.health = 4;
+
+    //Front shot
+    newObstacle.abilityList.push(1);
+    //Broadside shots
+    newObstacle.abilityList.push(2);
+    
+
+    newObstacle.abilityInterval = 160;
+
+    myObstacles.push(newObstacle);
+}
+
+spawnPirateFighter = (xOffset = 0) => {
+    let y = myGameArea.canvas.height;
+    let x = myGameArea.canvas.width;
+
+    let ranY = Math.floor(Math.random()*(y-40 - 0));
+
+
+    let newObstacle = new Component(60 * sizeMod, 31 * sizeMod, "img/obstacles/pirate-fighter.png", x + xOffset, ranY, "image");
+    newObstacle.pointsValue = 100;
+    newObstacle.speedX = -2;
+    newObstacle.health = 1;
+
+    //Front shot
+    newObstacle.abilityList.push(1);
+
+    //Pod
+    newObstacle.abilityOnDestructionList.push(102);
+    
+    newObstacle.abilityInterval = 150;
+
+    myObstacles.push(newObstacle);
+}
+
+spawnPirateDualFighter = (xOffset = 0) => {
+    let y = myGameArea.canvas.height;
+    let x = myGameArea.canvas.width;
+
+    let ranY = Math.floor(Math.random()*(y-40 - 0));
+
+    let newObstacle = new Component(61 * sizeMod, 34 * sizeMod, "img/obstacles/pirate-dual-fighter.png", x + xOffset, ranY, "image");
+    newObstacle.pointsValue = 100;
+    newObstacle.speedX = -2;
+    newObstacle.health = 2;
+
+    //Dual shot
+    newObstacle.abilityList.push(3);
+
+    //Pod
+    newObstacle.abilityOnDestructionList.push(103);
+    
+    newObstacle.abilityInterval = 200;
+
+    myObstacles.push(newObstacle);
+}
+
 //Enemy Bullets
-function triggerEnemyAbility(abilityId, x, y){
+triggerEnemyAbility = (abilityId, x, y, width) => {
     
     switch(abilityId){
         case 1:
             spawnEnemyBullet(x, y);
             break;
+        case 2:
+            spawnEnemyBulletSides(x, y);
+            break;
+        case 3:
+            spawnEnemyBulletDual(x, y);
+            break;
+        case 101:
+            spawnMineBullets(x, y, width);
+            break;
+        case 102:
+            spawnPiratePod(x, y, width);
+            break;
+        case 103:
+            spawnPirateDualAttackPods(x, y, width);
+            break;
     }
 }
 
-function spawnEnemyBullet(x, y){
+spawnEnemyBullet = (x, y) => {
     let newObstacle = new Component(16, 9, "img/bullets/e-blue-bullet.png", x, y - 4.5, "image");
     
 
@@ -681,10 +825,116 @@ function spawnEnemyBullet(x, y){
     myObstacles.push(newObstacle);
 }
 
+spawnEnemyBulletSides = (x, y) => {
+    let newObstacle1 = new Component(9, 16, "img/bullets/e-blue-bullet-up.png", x, y - 4.5, "image");
+    let newObstacle2 = new Component(9, 16, "img/bullets/e-blue-bullet-down.png", x, y - 4.5, "image");
+    
+    newObstacle1.speedY = -4;
+    newObstacle1.speedX = -1;
+
+    newObstacle2.speedY = 4;
+    newObstacle2.speedX = -1;
+
+    myObstacles.push(newObstacle1);
+    myObstacles.push(newObstacle2);
+}
+
+spawnEnemyBulletDual = (x, y) => {
+    let newObstacle1 = new Component(16, 9, "img/bullets/e-blue-bullet.png", x, y +4.5, "image");
+    let newObstacle2 = new Component(16, 9, "img/bullets/e-blue-bullet.png", x, y -13.5, "image");
+
+    newObstacle1.speedX = -6
+    newObstacle2.speedX = -6
+
+    myObstacles.push(newObstacle1);
+    myObstacles.push(newObstacle2);
+}
+
+spawnMineBullets = (x, y, width) => {
+    let mineHeight = 14;
+    let mineWidth = 14;
+
+    let randomBool = Math.random() >= 0.5;
+    // console.log('randomNumber:', randomNumber)
+
+    
+    let newObstacle1 = new Component(mineHeight, mineWidth, "img/bullets/e-orange-pellet.png", x - width/2, y - 4.5, "image");
+    let newObstacle2 = new Component(mineHeight, mineWidth, "img/bullets/e-orange-pellet.png", x - width/2, y - 4.5, "image");
+    let newObstacle3 = new Component(mineHeight, mineWidth, "img/bullets/e-orange-pellet.png", x - width/2, y - 4.5, "image");
+    let newObstacle4 = new Component(mineHeight, mineWidth, "img/bullets/e-orange-pellet.png", x - width/2, y - 4.5, "image");
+
+    if(randomBool){
+        //Horizontal and vertical shots
+        newObstacle1.speedX = -1;
+        newObstacle1.speedY = 3;
+    
+        newObstacle2.speedX = -1;
+        newObstacle2.speedY = -3;
+    
+        newObstacle3.speedX = -4.5;
+    
+        newObstacle4.speedX = 2;
+    } else{
+        //Diagonal shots
+        newObstacle1.speedX = -3.5;
+        newObstacle1.speedY = -2.5;
+    
+        newObstacle2.speedX = -3.5;
+        newObstacle2.speedY = 2.5;
+    
+        newObstacle3.speedX = 3.5;
+        newObstacle3.speedY = -2.5;
+    
+        newObstacle4.speedX = 3.5;
+        newObstacle4.speedY = 2.5;
+    }
+    
+
+    myObstacles.push(newObstacle1);
+    myObstacles.push(newObstacle2);
+    myObstacles.push(newObstacle3);
+    myObstacles.push(newObstacle4);
+}
+
+spawnPiratePod = (x, y, width) => {
+    //Add random chance to pod spawn
+    let newObstacle = new Component(30 * sizeMod, 17 * sizeMod, "img/obstacles/pirate-pod.png", x + width/2, y, "image");
+    newObstacle.pointsValue = 50;
+    newObstacle.speedX = -2;
+    newObstacle.health = 1;
+
+
+    myObstacles.push(newObstacle);
+}
+
+spawnPirateDualAttackPods = (x, y, width) => {
+    let newObstacle1 = new Component(48 * sizeMod, 18 * sizeMod, "img/obstacles/pirate-attack-pod.png", x + width/2, y +9, "image");
+    let newObstacle2 = new Component(48 * sizeMod, 18 * sizeMod, "img/obstacles/pirate-attack-pod.png", x + width/2, y -18, "image");
+    newObstacle1.pointsValue = 50;
+    newObstacle1.speedX = -2;
+    newObstacle1.health = 1;
+    newObstacle2.pointsValue = 50;
+    newObstacle2.speedX = -2;
+    newObstacle2.health = 1;
+
+    newObstacle1.abilityList.push(1);
+    newObstacle1.abilityInterval = 200;
+    newObstacle2.abilityList.push(1);
+    newObstacle2.abilityInterval = 200;
+
+    myObstacles.push(newObstacle1);
+    myObstacles.push(newObstacle2);
+}
+
+
+dropPowerUp = (x, y) => {
+    let newObstacle = new Component(9, 9, "blue", x, y,);
+}
+
 
 //Check for crashes
 ///Takes in an array and a object and then returns a array with either: a false or a true and a index value
-function checkForCrashes(arrayOne, obj){
+checkForCrashes = (arrayOne, obj) => {
     for(j = 0; j < arrayOne.length; j += 1){
         if(obj.crashWith(arrayOne[j])){
             return [true, j];
@@ -694,7 +944,7 @@ function checkForCrashes(arrayOne, obj){
 }
 
 //Firing Logic
-function shootBullet(){
+shootBullet = () =>{
     if(nextBullet != 0){
         nextBullet -= 1;
     }
@@ -788,8 +1038,8 @@ function shootBullet(){
     }
 }
 
-function ObstacleControl(){
-    let fNo = myGameArea.frameNo + 2800;
+ObstacleControl = () => {
+    let fNo = myGameArea.frameNo;
 
     if(fNo == 200){
         //Enter Astroid Field
@@ -821,10 +1071,25 @@ function ObstacleControl(){
         patrolShipsOn = true;
         smallAstroidsOn = true;
     }
+    if(fNo == 4000){
+        probeShipsOn = false;
+        patrolShipsOn = false;
+        smallAstroidsOn = false;
+    }
+    if(fNo == 4500){
+        //Enter mine field
+        myGameMessage.x = -500;
+        myGameMessage.image.src = "img/messages/enter-mine.png";
+
+        minesOn = true;
+    }
+    if(fNo == 5000){
+        moreMinesOn = true;
+    }
 }
 
 //Movement
-function keyboardMove(){
+keyboardMove = () => {
     if(myGameArea.keys){
         if (myGameArea.keys[37]) {moveRight(); }
         if (myGameArea.keys[39]) {moveLeft(); }
@@ -843,7 +1108,7 @@ function keyboardMove(){
     // if (myGameArea.keys && myGameArea.keys[40]) {moveDown(); }
 }
 
-function changeImage(moving = false){
+changeImage = (moving = false) =>{
     if(invincibilityOn){
         if(moving){
             invincibilityFlicker(true);
@@ -860,7 +1125,7 @@ function changeImage(moving = false){
     
 }
 
-function invincibilityFlicker(moving = false){
+invincibilityFlicker = (moving = false) =>{
     let moveString = "";
     if(moving){
         moveString = "-moving"
@@ -887,35 +1152,35 @@ function invincibilityFlicker(moving = false){
     }
 }
 
-function moveUp(){
+moveUp = () => {
     myGamePiece.speedY = -6;
     // changeImage();
     // invincibilityFlicker();
 }
 
-function moveDown(){
+moveDown = () => {
     myGamePiece.speedY = 6;
     // changeImage();
 }
 
-function moveLeft(){
+moveLeft = () => {
     myGamePiece.speedX = 4;
     // changeImage();
 }
 
-function moveRight(){
+moveRight = () => {
     myGamePiece.speedX = -4;
     // changeImage();
 }
 
-function clearMove(){
+clearMove = () => {
     changeImage();
     myGamePiece.speedX = 0;
     myGamePiece.speedY = 0;
 
 }
 
-function slowDown(){
+slowDown = () => {
     myGamePiece.image.src = myPieceImgSrc;
     //Slow down
 
@@ -940,8 +1205,5 @@ function slowDown(){
     }
 }
 
-
-
 //Start game
 startGame();
-
