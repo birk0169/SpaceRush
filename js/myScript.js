@@ -6,6 +6,10 @@
 // var test = new ImageComponent(myPieceWidth  * sizeMod, myPieceHeight * sizeMod, myPieceImgSrc, myPieceX, myPieceY)
 // console.log(test);
 
+var test = new Test(1, 2);
+
+test.printTotal();
+
 ////Variables
 //GameTime
 var gameTime = 0;
@@ -17,8 +21,8 @@ var timeBonus = 0;
 //GamePiece
 var myGamePiece;
 
-const myPieceWidth = 40;
-const myPieceHeight = 35;
+const myPieceWidth = 80;
+const myPieceHeight = 70;
 // var myPieceWidth = 40;
 // var myPieceHeight = 35;
 // var myPieceColor = "red";
@@ -74,7 +78,7 @@ var myBackground;
 const gameAreaWidth = 980;
 const gameAreaHeight = 580;
 
-const sizeMod = 1;
+const sizeMod = 0.8;
 
 var myGameArea = {
     canvas : document.createElement("canvas"),
@@ -355,6 +359,9 @@ function startGame(){
 
     //Game Background layer
     myBackground = new Component(gameAreaWidth, gameAreaHeight, "img/starry-sky-yellow.png", 0, 0, "background");
+
+    //New Code WIP
+    var backGroundArea = new Area(gameAreaWidth, gameAreaHeight);
 
     myMessageArea.start();
     myGameArea.start();
